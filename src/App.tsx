@@ -227,6 +227,14 @@ function App() {
     return event.repeat.type !== 'none' && event.repeat.interval > 0;
   };
 
+  const handleDateClick = (dateString: string) => {
+    setDate(dateString);
+    // 다음 렌더링 후 포커스 이동
+    setTimeout(() => {
+      document.getElementById('title')?.focus();
+    }, 0);
+  };
+
   const handleEditEvent = (event: Event) => {
     if (isRecurringEvent(event)) {
       // Show recurring edit dialog
@@ -345,6 +353,11 @@ function App() {
               <TableRow>
                 {weekDates.map((date) => {
                   const dateString = formatDate(date, date.getDate());
+                  const hasEvents =
+                    filteredEvents.filter(
+                      (event) => new Date(event.date).toDateString() === date.toDateString()
+                    ).length > 0;
+
                   return (
                     <TableCell
                       key={date.toISOString()}
@@ -356,7 +369,16 @@ function App() {
                         border: '1px solid #e0e0e0',
                         overflow: 'hidden',
                         ...getDropZoneStyles(dateString),
+                        ...(!hasEvents
+                          ? {
+                              cursor: 'pointer',
+                              '&:hover': {
+                                backgroundColor: '#f5f5f5',
+                              },
+                            }
+                          : {}),
                       }}
+                      onClick={!hasEvents ? () => handleDateClick(dateString) : undefined}
                       onDragOver={handleDragOver(dateString)}
                       onDrop={handleDrop(dateString)}
                     >
@@ -442,6 +464,7 @@ function App() {
                   {week.map((day, dayIndex) => {
                     const dateString = day ? formatDate(currentDate, day) : '';
                     const holiday = holidays[dateString];
+                    const hasEvents = day && getEventsForDay(filteredEvents, day).length > 0;
 
                     return (
                       <TableCell
@@ -455,7 +478,16 @@ function App() {
                           overflow: 'hidden',
                           position: 'relative',
                           ...(day ? getDropZoneStyles(dateString) : {}),
+                          ...(day && !hasEvents
+                            ? {
+                                cursor: 'pointer',
+                                '&:hover': {
+                                  backgroundColor: '#f5f5f5',
+                                },
+                              }
+                            : {}),
                         }}
+                        onClick={day && !hasEvents ? () => handleDateClick(dateString) : undefined}
                         onDragOver={day ? handleDragOver(dateString) : undefined}
                         onDrop={day ? handleDrop(dateString) : undefined}
                       >

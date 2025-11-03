@@ -36,10 +36,11 @@ import {
   Typography,
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import RecurringEventDialog from './components/RecurringEventDialog.tsx';
 import { useCalendarView } from './hooks/useCalendarView.ts';
+import { useDragAndDrop } from './hooks/useDragAndDrop.ts';
 import { useEventForm } from './hooks/useEventForm.ts';
 import { useEventOperations } from './hooks/useEventOperations.ts';
 import { useNotifications } from './hooks/useNotifications.ts';
@@ -157,6 +158,21 @@ function App() {
   const { view, setView, currentDate, holidays, navigate } = useCalendarView();
   const { searchTerm, filteredEvents, setSearchTerm } = useSearch(events, currentDate, view);
 
+  const {
+    pendingDropEvent,
+    handleDragStart,
+    handleDragEnd,
+    handleDragOver,
+    handleDrop,
+    handleRecurringDropConfirm,
+    handleRecurringDropCancel,
+    getDragStyles,
+    getDropZoneStyles,
+  } = useDragAndDrop({
+    fetchEvents,
+    onRecurringEventUpdate: handleRecurringEdit,
+  });
+
   const [isOverlapDialogOpen, setIsOverlapDialogOpen] = useState(false);
   const [overlappingEvents, setOverlappingEvents] = useState<Event[]>([]);
   const [isRecurringDialogOpen, setIsRecurringDialogOpen] = useState(false);
@@ -164,8 +180,27 @@ function App() {
   const [pendingRecurringDelete, setPendingRecurringDelete] = useState<Event | null>(null);
   const [recurringEditMode, setRecurringEditMode] = useState<boolean | null>(null); // true = single, false = all
   const [recurringDialogMode, setRecurringDialogMode] = useState<'edit' | 'delete'>('edit');
+  const [isRecurringDropDialogOpen, setIsRecurringDropDialogOpen] = useState(false);
 
   const { enqueueSnackbar } = useSnackbar();
+
+  // 드래그 앤 드롭 반복 일정 다이얼로그 자동 열기
+  useEffect(() => {
+    if (pendingDropEvent) {
+      setIsRecurringDropDialogOpen(true);
+    }
+  }, [pendingDropEvent]);
+
+  const handleRecurringDropDialogConfirm = async (editSingleOnly: boolean) => {
+    try {
+      await handleRecurringDropConfirm(editSingleOnly);
+      setIsRecurringDropDialogOpen(false);
+      enqueueSnackbar('일정이 이동되었습니다', { variant: 'success' });
+    } catch (error) {
+      console.error(error);
+      enqueueSnackbar('일정 이동 실패', { variant: 'error' });
+    }
+  };
 
   const handleRecurringConfirm = async (editSingleOnly: boolean) => {
     if (recurringDialogMode === 'edit' && pendingRecurringEdit) {
@@ -308,62 +343,74 @@ function App() {
             </TableHead>
             <TableBody>
               <TableRow>
-                {weekDates.map((date) => (
-                  <TableCell
-                    key={date.toISOString()}
-                    sx={{
-                      height: '120px',
-                      verticalAlign: 'top',
-                      width: '14.28%',
-                      padding: 1,
-                      border: '1px solid #e0e0e0',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <Typography variant="body2" fontWeight="bold">
-                      {date.getDate()}
-                    </Typography>
-                    {filteredEvents
-                      .filter(
-                        (event) => new Date(event.date).toDateString() === date.toDateString()
-                      )
-                      .map((event) => {
-                        const isNotified = notifiedEvents.includes(event.id);
-                        const isRepeating = event.repeat.type !== 'none';
+                {weekDates.map((date) => {
+                  const dateString = formatDate(date, date.getDate());
+                  return (
+                    <TableCell
+                      key={date.toISOString()}
+                      sx={{
+                        height: '120px',
+                        verticalAlign: 'top',
+                        width: '14.28%',
+                        padding: 1,
+                        border: '1px solid #e0e0e0',
+                        overflow: 'hidden',
+                        ...getDropZoneStyles(dateString),
+                      }}
+                      onDragOver={handleDragOver(dateString)}
+                      onDrop={handleDrop(dateString)}
+                    >
+                      <Typography variant="body2" fontWeight="bold">
+                        {date.getDate()}
+                      </Typography>
+                      {filteredEvents
+                        .filter(
+                          (event) => new Date(event.date).toDateString() === date.toDateString()
+                        )
+                        .map((event) => {
+                          const isNotified = notifiedEvents.includes(event.id);
+                          const isRepeating = event.repeat.type !== 'none';
 
-                        return (
-                          <Box
-                            key={event.id}
-                            sx={{
-                              ...eventBoxStyles.common,
-                              ...(isNotified ? eventBoxStyles.notified : eventBoxStyles.normal),
-                            }}
-                          >
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              {isNotified && <Notifications fontSize="small" />}
-                              {/* ! TEST CASE */}
-                              {isRepeating && (
-                                <Tooltip
-                                  title={`${event.repeat.interval}${getRepeatTypeLabel(event.repeat.type)}마다 반복${
-                                    event.repeat.endDate ? ` (종료: ${event.repeat.endDate})` : ''
-                                  }`}
+                          return (
+                            <Box
+                              key={event.id}
+                              draggable
+                              onDragStart={handleDragStart(event)}
+                              onDragEnd={handleDragEnd}
+                              sx={{
+                                ...eventBoxStyles.common,
+                                ...(isNotified ? eventBoxStyles.notified : eventBoxStyles.normal),
+                                ...getDragStyles(event.id),
+                              }}
+                            >
+                              <Stack direction="row" spacing={1} alignItems="center">
+                                {isNotified && <Notifications fontSize="small" />}
+                                {/* ! TEST CASE */}
+                                {isRepeating && (
+                                  <Tooltip
+                                    title={`${event.repeat.interval}${getRepeatTypeLabel(
+                                      event.repeat.type
+                                    )}마다 반복${
+                                      event.repeat.endDate ? ` (종료: ${event.repeat.endDate})` : ''
+                                    }`}
+                                  >
+                                    <Repeat fontSize="small" />
+                                  </Tooltip>
+                                )}
+                                <Typography
+                                  variant="caption"
+                                  noWrap
+                                  sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}
                                 >
-                                  <Repeat fontSize="small" />
-                                </Tooltip>
-                              )}
-                              <Typography
-                                variant="caption"
-                                noWrap
-                                sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}
-                              >
-                                {event.title}
-                              </Typography>
-                            </Stack>
-                          </Box>
-                        );
-                      })}
-                  </TableCell>
-                ))}
+                                  {event.title}
+                                </Typography>
+                              </Stack>
+                            </Box>
+                          );
+                        })}
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             </TableBody>
           </Table>
@@ -407,7 +454,10 @@ function App() {
                           border: '1px solid #e0e0e0',
                           overflow: 'hidden',
                           position: 'relative',
+                          ...(day ? getDropZoneStyles(dateString) : {}),
                         }}
+                        onDragOver={day ? handleDragOver(dateString) : undefined}
+                        onDrop={day ? handleDrop(dateString) : undefined}
                       >
                         {day && (
                           <>
@@ -426,6 +476,9 @@ function App() {
                               return (
                                 <Box
                                   key={event.id}
+                                  draggable
+                                  onDragStart={handleDragStart(event)}
+                                  onDragEnd={handleDragEnd}
                                   sx={{
                                     p: 0.5,
                                     my: 0.5,
@@ -436,6 +489,7 @@ function App() {
                                     minHeight: '18px',
                                     width: '100%',
                                     overflow: 'hidden',
+                                    ...getDragStyles(event.id),
                                   }}
                                 >
                                   <Stack direction="row" spacing={1} alignItems="center">
@@ -443,7 +497,9 @@ function App() {
                                     {/* ! TEST CASE */}
                                     {isRepeating && (
                                       <Tooltip
-                                        title={`${event.repeat.interval}${getRepeatTypeLabel(event.repeat.type)}마다 반복${
+                                        title={`${event.repeat.interval}${getRepeatTypeLabel(
+                                          event.repeat.type
+                                        )}마다 반복${
                                           event.repeat.endDate
                                             ? ` (종료: ${event.repeat.endDate})`
                                             : ''
@@ -728,7 +784,9 @@ function App() {
                       {notifiedEvents.includes(event.id) && <Notifications color="error" />}
                       {event.repeat.type !== 'none' && (
                         <Tooltip
-                          title={`${event.repeat.interval}${getRepeatTypeLabel(event.repeat.type)}마다 반복${
+                          title={`${event.repeat.interval}${getRepeatTypeLabel(
+                            event.repeat.type
+                          )}마다 반복${
                             event.repeat.endDate ? ` (종료: ${event.repeat.endDate})` : ''
                           }`}
                         >
@@ -834,6 +892,17 @@ function App() {
         onConfirm={handleRecurringConfirm}
         event={recurringDialogMode === 'edit' ? pendingRecurringEdit : pendingRecurringDelete}
         mode={recurringDialogMode}
+      />
+
+      <RecurringEventDialog
+        open={isRecurringDropDialogOpen}
+        onClose={() => {
+          setIsRecurringDropDialogOpen(false);
+          handleRecurringDropCancel();
+        }}
+        onConfirm={handleRecurringDropDialogConfirm}
+        event={pendingDropEvent}
+        mode="edit"
       />
 
       {notifications.length > 0 && (

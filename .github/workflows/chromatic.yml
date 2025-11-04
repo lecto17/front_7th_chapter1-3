@@ -1,0 +1,45 @@
+name: Chromatic Visual Tests
+
+on:
+  pull_request:
+    types:
+      - synchronize
+      - opened
+      - reopened
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  chromatic:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Chromatic needs full git history
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run Chromatic
+        uses: chromaui/action@latest
+        with:
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          buildScriptName: 'build-storybook'
+          exitOnceUploaded: true # CI 시간 단축을 위해 업로드 후 바로 종료
+          onlyChanged: true # 변경된 스토리만 테스트 (선택사항)
+          autoAcceptChanges: main # main 브랜치는 자동으로 승인
+

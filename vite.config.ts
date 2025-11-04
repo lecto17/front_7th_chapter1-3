@@ -1,63 +1,66 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react-swc';
 import { defineConfig } from 'vite';
-import { defineConfig as defineTestConfig, mergeConfig } from 'vitest/config';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+
 const dirname =
   typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
-export default mergeConfig(
-  defineConfig({
-    plugins: [react()],
-    server: {
-      proxy: {
-        '/api': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
       },
     },
-    test: {
-      projects: [
-        {
-          extends: true,
-          plugins: [
-            // The plugin will run tests for the stories defined in your Storybook config
-            // See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
-            storybookTest({
-              configDir: path.join(dirname, '.storybook'),
-            }),
-          ],
-          test: {
-            name: 'storybook',
-            browser: {
-              enabled: true,
-              headless: true,
-              provider: 'playwright',
-              instances: [
-                {
-                  browser: 'chromium',
-                },
-              ],
-            },
-            setupFiles: ['.storybook/vitest.setup.ts'],
+  },
+  test: {
+    globals: true,
+    coverage: {
+      reportsDirectory: './.coverage',
+      reporter: ['lcov', 'json', 'json-summary'],
+    },
+    projects: [
+      {
+        extends: true,
+        plugins: [
+          // The plugin will run tests for the stories defined in your Storybook config
+          // See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
+          storybookTest({
+            configDir: path.join(dirname, '.storybook'),
+          }),
+        ],
+        test: {
+          name: 'storybook',
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: 'playwright',
+            instances: [
+              {
+                browser: 'chromium',
+              },
+            ],
           },
+          setupFiles: ['.storybook/vitest.setup.ts'],
         },
-      ],
-    },
-  }),
-  defineTestConfig({
-    test: {
-      globals: true,
-      environment: 'jsdom',
-      setupFiles: './src/setupTests.ts',
-      coverage: {
-        reportsDirectory: './.coverage',
-        reporter: ['lcov', 'json', 'json-summary'],
       },
-    },
-  })
-);
+      {
+        // 일반 Vitest 테스트 (Node.js/jsdom 환경)
+        test: {
+          name: 'unit',
+          globals: true,
+          environment: 'jsdom',
+          setupFiles: './src/setupTests.ts',
+          include: ['src/**/*.spec.{ts,tsx}'],
+          exclude: ['src/stories/**'],
+        },
+      },
+    ],
+  },
+});

@@ -31,14 +31,14 @@ const eventBoxStyles = {
     color: '#d32f2f',
   },
   normal: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#e3f2fd', // 변경: 회색 → 파란색!
     fontWeight: 'normal',
     color: 'inherit',
   },
   common: {
     p: 0.5,
     my: 0.5,
-    borderRadius: 1,
+    borderRadius: 2, // 변경: 1 → 2 (더 둥글게!)
     minHeight: '18px',
     width: '100%',
     overflow: 'hidden',

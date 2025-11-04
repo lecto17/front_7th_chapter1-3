@@ -41,5 +41,4 @@ jobs:
           buildScriptName: 'build-storybook'
           exitOnceUploaded: true # CI 시간 단축을 위해 업로드 후 바로 종료
           onlyChanged: true # 변경된 스토리만 테스트 (선택사항)
-          autoAcceptChanges: main # main 브랜치는 자동으로 승인
-
+          # autoAcceptChanges: main # main 브랜치는 자동으로 승인

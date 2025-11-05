@@ -1,15 +1,12 @@
 import {
   ChevronLeft,
   ChevronRight,
-  Close,
   Delete,
   Edit,
   Notifications,
   Repeat,
 } from '@mui/icons-material';
 import {
-  Alert,
-  AlertTitle,
   Box,
   Button,
   Checkbox,
@@ -28,6 +25,7 @@ import { useSnackbar } from 'notistack';
 import { useEffect, useState } from 'react';
 
 import { CalendarView } from './components/CalendarView.tsx';
+import NotificationAlert from './components/NotificationAlert.tsx';
 import OverlapDialog from './components/OverlapDialog.tsx';
 import RecurringEventDialog from './components/RecurringEventDialog.tsx';
 import { useCalendarView } from './hooks/useCalendarView.ts';
@@ -661,27 +659,10 @@ function App() {
         mode="edit"
       />
 
-      {notifications.length > 0 && (
-        <Stack position="fixed" top={16} right={16} spacing={2} alignItems="flex-end">
-          {notifications.map((notification, index) => (
-            <Alert
-              key={index}
-              severity="info"
-              sx={{ width: 'auto' }}
-              action={
-                <IconButton
-                  size="small"
-                  onClick={() => setNotifications((prev) => prev.filter((_, i) => i !== index))}
-                >
-                  <Close />
-                </IconButton>
-              }
-            >
-              <AlertTitle>{notification.message}</AlertTitle>
-            </Alert>
-          ))}
-        </Stack>
-      )}
+      <NotificationAlert
+        notifications={notifications}
+        onDismiss={(index) => setNotifications((prev) => prev.filter((_, i) => i !== index))}
+      />
     </Box>
   );
 }

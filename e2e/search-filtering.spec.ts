@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 import { resetDatabase, createEvent } from './test-helpers';
+import { formatDate } from '../src/utils/dateUtils';
 
 test.describe('검색 및 필터링 워크플로우', () => {
   test.beforeEach(async ({ page }) => {
@@ -11,7 +12,7 @@ test.describe('검색 및 필터링 워크플로우', () => {
 
   test('기본 검색 기능 - 제목 검색, 대소문자 무관, 검색어 지우기', async ({ page }) => {
     const today = new Date();
-    const dateString = today.toISOString().split('T')[0];
+    const dateString = formatDate(today);
 
     // 여러 일정 생성
     await createEvent(page, {
@@ -70,43 +71,40 @@ test.describe('검색 및 필터링 워크플로우', () => {
 
   test('다양한 필드 검색 - 제목, 설명, 위치, 부분 일치', async ({ page }) => {
     const today = new Date();
-    const dateString = today.toISOString().split('T')[0];
+    const dateString = formatDate(today);
 
     // 제목에 키워드가 있는 일정
-    await page.fill('#title', '개발팀 회의');
-    await page.fill('#date', dateString);
-    await page.fill('#start-time', '10:00');
-    await page.fill('#end-time', '11:00');
-    await page.fill('#description', '일반적인 내용');
-    await page.fill('#location', '회의실 A');
-    await page.click('#category');
-    await page.getByRole('option', { name: '업무' }).click();
-    await page.click('[data-testid="event-submit-button"]');
-    await expect(page.getByText('일정이 추가되었습니다').last()).toBeVisible({ timeout: 5000 });
+    await createEvent(page, {
+      title: '개발팀 회의',
+      date: dateString,
+      startTime: '10:00',
+      endTime: '11:00',
+      description: '일반적인 내용',
+      location: '회의실 A',
+      category: '업무',
+    });
 
     // 설명에 키워드가 있는 일정
-    await page.fill('#title', '일정 A');
-    await page.fill('#date', dateString);
-    await page.fill('#start-time', '13:00');
-    await page.fill('#end-time', '14:00');
-    await page.fill('#description', '중요한 프로젝트 논의');
-    await page.fill('#location', '회의실 B');
-    await page.click('#category');
-    await page.getByRole('option', { name: '업무' }).click();
-    await page.click('[data-testid="event-submit-button"]');
-    await expect(page.getByText('일정이 추가되었습니다').last()).toBeVisible({ timeout: 5000 });
+    await createEvent(page, {
+      title: '일정 A',
+      date: dateString,
+      startTime: '13:00',
+      endTime: '14:00',
+      description: '중요한 프로젝트 논의',
+      location: '회의실 B',
+      category: '업무',
+    });
 
     // 위치에 키워드가 있는 일정
-    await page.fill('#title', '일정 B');
-    await page.fill('#date', dateString);
-    await page.fill('#start-time', '15:00');
-    await page.fill('#end-time', '16:00');
-    await page.fill('#description', '일반 업무');
-    await page.fill('#location', '본사 3층');
-    await page.click('#category');
-    await page.getByRole('option', { name: '업무' }).click();
-    await page.click('[data-testid="event-submit-button"]');
-    await expect(page.getByText('일정이 추가되었습니다').last()).toBeVisible({ timeout: 5000 });
+    await createEvent(page, {
+      title: '일정 B',
+      date: dateString,
+      startTime: '15:00',
+      endTime: '16:00',
+      description: '일반 업무',
+      location: '본사 3층',
+      category: '업무',
+    });
 
     const eventList = page.getByTestId('event-list');
 
@@ -118,7 +116,7 @@ test.describe('검색 및 필터링 워크플로우', () => {
 
     // 위치로 검색
     await page.fill('#search', '본사');
-    await expect(eventList.getByText('일정 B')).toBeVisible();
+    await expect(eventList.getByText('일정 B')).toBeVisible({ timeout: 5000 });
     await expect(eventList.getByText('개발팀 회의')).not.toBeVisible();
     await expect(eventList.getByText('일정 A')).not.toBeVisible();
 
@@ -141,9 +139,9 @@ test.describe('검색 및 필터링 워크플로우', () => {
     const nextMonth = new Date(today);
     nextMonth.setMonth(today.getMonth() + 1);
 
-    const todayString = today.toISOString().split('T')[0];
-    const nextWeekString = nextWeek.toISOString().split('T')[0];
-    const nextMonthString = nextMonth.toISOString().split('T')[0];
+    const todayString = formatDate(today);
+    const nextWeekString = formatDate(nextWeek);
+    const nextMonthString = formatDate(nextMonth);
 
     // 이번 주 일정
     await createEvent(page, {

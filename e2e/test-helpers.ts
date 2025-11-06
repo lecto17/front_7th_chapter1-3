@@ -22,6 +22,7 @@ export async function resetDatabase(page: Page) {
     return result;
   } catch (error) {
     // JSON 파싱 실패 시 기본값 반환
+    console.error(error);
     return { message: 'Database reset successfully', events: [] };
   }
 }

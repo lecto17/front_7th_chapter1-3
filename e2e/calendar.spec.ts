@@ -95,8 +95,6 @@ test.describe('일정 관리 CRUD 워크플로우', () => {
     const eventList = page.getByTestId('event-list');
     await expect(eventList.getByText(uniqueTitle)).toBeVisible();
 
-    const initialCount = await eventList.locator('> div').count();
-
     // 삭제 버튼 클릭
     const eventCard = eventList.locator('div').filter({ hasText: uniqueTitle }).first();
     await eventCard.locator('[aria-label="Delete event"]').click();

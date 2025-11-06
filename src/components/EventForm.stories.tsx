@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-
 import type { ChangeEvent } from 'react';
 
 import type { RepeatType } from '../types';

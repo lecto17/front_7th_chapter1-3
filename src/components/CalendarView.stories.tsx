@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-
 import type { DragEvent } from 'react';
 
 import type { Event } from '../types';

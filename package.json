@@ -11,6 +11,10 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report",
     "build": "tsc -b && vite build",
     "lint:eslint": "eslint . --ext ts,tsx --report-unused-disable-directives",
     "lint:tsc": "tsc --pretty",
@@ -67,7 +71,7 @@
     "vite": "^7.0.2",
     "vite-plugin-eslint": "^1.8.1",
     "vitest": "^3.2.4",
-    "playwright": "^1.56.1",
+    "@playwright/test": "^1.56.1",
     "@vitest/browser": "3.2.4"
   }
 }

@@ -11,6 +11,12 @@ const dirname =
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   plugins: [react()],
+  define: {
+    // E2E 테스트 환경 변수를 클라이언트에 전달
+    'import.meta.env.VITE_TEST_ENV': JSON.stringify(
+      process.env.TEST_ENV || process.env.VITE_TEST_ENV || 'e2e'
+    ),
+  },
   server: {
     proxy: {
       '/api': {

@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
+import type { DragEvent } from 'react';
+
+import type { Event } from '../types';
 import { CalendarView } from './CalendarView';
-import { Event } from '../types';
 
 // 샘플 이벤트 데이터
 const mockEvents: Event[] = [
@@ -211,7 +213,7 @@ export const WeekView: Story = {
     onDateClick: (dateString: string) => console.log('Date clicked:', dateString),
     onDragStart: (event: Event) => () => console.log('Drag start:', event.title),
     onDragEnd: () => console.log('Drag end'),
-    onDragOver: (dateString: string) => (e: React.DragEvent) => {
+    onDragOver: (dateString: string) => (e: DragEvent) => {
       e.preventDefault();
       console.log('Drag over:', dateString);
     },
@@ -232,7 +234,7 @@ export const MonthView: Story = {
     onDateClick: (dateString: string) => console.log('Date clicked:', dateString),
     onDragStart: (event: Event) => () => console.log('Drag start:', event.title),
     onDragEnd: () => console.log('Drag end'),
-    onDragOver: (dateString: string) => (e: React.DragEvent) => {
+    onDragOver: (dateString: string) => (e: DragEvent) => {
       e.preventDefault();
       console.log('Drag over:', dateString);
     },

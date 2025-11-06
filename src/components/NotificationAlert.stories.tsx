@@ -192,4 +192,3 @@ export const WithSpecialCharacters: Story = {
     onDismiss: (index) => console.log('Dismissed notification at index:', index),
   },
 };
-

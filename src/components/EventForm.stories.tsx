@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
+import type { ChangeEvent } from 'react';
+
+import type { RepeatType } from '../types';
 import { EventForm } from './EventForm';
-import { RepeatType } from '../types';
 
 const meta: Meta<typeof EventForm> = {
   title: 'Components/EventForm',
@@ -52,8 +54,10 @@ type Story = StoryObj<typeof meta>;
 const defaultHandlers = {
   onTitleChange: (value: string) => console.log('Title changed:', value),
   onDateChange: (value: string) => console.log('Date changed:', value),
-  onStartTimeChange: (e: any) => console.log('Start time changed:', e.target.value),
-  onEndTimeChange: (e: any) => console.log('End time changed:', e.target.value),
+  onStartTimeChange: (e: ChangeEvent<HTMLInputElement>) =>
+    console.log('Start time changed:', e.target.value),
+  onEndTimeChange: (e: ChangeEvent<HTMLInputElement>) =>
+    console.log('End time changed:', e.target.value),
   onDescriptionChange: (value: string) => console.log('Description changed:', value),
   onLocationChange: (value: string) => console.log('Location changed:', value),
   onCategoryChange: (value: string) => console.log('Category changed:', value),
@@ -195,4 +199,3 @@ export const RepeatingWithLongText: Story = {
     repeatEndDate: '2025-06-30',
   },
 };
-

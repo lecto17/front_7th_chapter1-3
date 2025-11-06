@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
+import type { DragEvent } from 'react';
+
+import type { Event } from '../types';
 import { CalendarView } from './CalendarView';
-import { Event } from '../types';
 
 /**
  * 각 셀 텍스트 길이에 따른 처리 시각적 회귀 테스트
@@ -583,7 +585,7 @@ export const TextLengthVariations_WeekView: Story = {
     onDateClick: (dateString: string) => console.log('Date clicked:', dateString),
     onDragStart: (event: Event) => () => console.log('Drag start:', event.title),
     onDragEnd: () => console.log('Drag end'),
-    onDragOver: () => (e: React.DragEvent) => {
+    onDragOver: () => (e: DragEvent) => {
       e.preventDefault();
     },
     onDrop: (dateString: string) => () => console.log('Drop on:', dateString),

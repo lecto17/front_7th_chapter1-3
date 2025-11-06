@@ -1,5 +1,5 @@
-import { Alert, AlertTitle, IconButton, Stack } from '@mui/material';
 import { Close } from '@mui/icons-material';
+import { Alert, AlertTitle, IconButton, Stack } from '@mui/material';
 
 /**
  * Notification type
@@ -51,4 +51,3 @@ const NotificationAlert = ({ notifications, onDismiss }: NotificationAlertProps)
 };
 
 export default NotificationAlert;
-

@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import type { CSSProperties, DragEvent } from 'react';
 
 import { Event } from '../types';
 
@@ -36,16 +37,16 @@ interface UseDragAndDropReturn {
   pendingDropDate: string | null;
 
   // 핸들러
-  handleDragStart: (event: Event) => (e: React.DragEvent) => void;
+  handleDragStart: (event: Event) => (e: DragEvent) => void;
   handleDragEnd: () => void;
-  handleDragOver: (date: string) => (e: React.DragEvent) => void;
-  handleDrop: (date: string) => (e: React.DragEvent) => Promise<void>;
+  handleDragOver: (date: string) => (e: DragEvent) => void;
+  handleDrop: (date: string) => (e: DragEvent) => Promise<void>;
   handleRecurringDropConfirm: (editSingleOnly: boolean) => Promise<void>;
   handleRecurringDropCancel: () => void;
 
   // 스타일 헬퍼
-  getDragStyles: (eventId: string) => React.CSSProperties;
-  getDropZoneStyles: (date: string) => React.CSSProperties;
+  getDragStyles: (eventId: string) => CSSProperties;
+  getDropZoneStyles: (date: string) => CSSProperties;
 }
 
 // ==================== 유틸리티 함수 ====================
@@ -125,7 +126,7 @@ export const useDragAndDrop = ({
    * 드래그 시작: 이벤트 정보 저장 및 DataTransfer 설정
    */
   const handleDragStart = useCallback(
-    (event: Event) => (e: React.DragEvent) => {
+    (event: Event) => (e: DragEvent) => {
       setDraggedEvent(event);
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', event.id);
@@ -149,7 +150,7 @@ export const useDragAndDrop = ({
    * 드래그 오버: 드롭 가능 영역 하이라이트
    */
   const handleDragOver = useCallback(
-    (date: string) => (e: React.DragEvent) => {
+    (date: string) => (e: DragEvent) => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       setDragOverDate(date);
@@ -161,7 +162,7 @@ export const useDragAndDrop = ({
    * 드롭: 이벤트를 새로운 날짜로 이동
    */
   const handleDrop = useCallback(
-    (newDate: string) => async (e: React.DragEvent) => {
+    (newDate: string) => async (e: DragEvent) => {
       e.preventDefault();
 
       if (!draggedEvent) return;
@@ -226,7 +227,7 @@ export const useDragAndDrop = ({
    * 드래그 중인 이벤트의 스타일
    */
   const getDragStyles = useCallback(
-    (eventId: string): React.CSSProperties => {
+    (eventId: string): CSSProperties => {
       const isDragging = draggedEvent?.id === eventId;
       return isDragging ? DRAG_STYLES.DRAGGING : DRAG_STYLES.IDLE;
     },
@@ -237,7 +238,7 @@ export const useDragAndDrop = ({
    * 드롭 영역(날짜 셀)의 스타일
    */
   const getDropZoneStyles = useCallback(
-    (date: string): React.CSSProperties => {
+    (date: string): CSSProperties => {
       const isActive = dragOverDate === date && draggedEvent !== null;
       return isActive ? DROP_ZONE_STYLES.ACTIVE : DROP_ZONE_STYLES.IDLE;
     },

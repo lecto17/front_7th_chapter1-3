@@ -48,9 +48,6 @@ test.describe('일정 관리 CRUD 워크플로우', () => {
   });
 
   test('일정 생성(Create) - 기본 일정 추가', async ({ page }) => {
-    const today = new Date();
-    const dateString = today.toISOString().split('T')[0];
-
     // 일정 생성 전 개수 확인
     const eventList = page.getByTestId('event-list');
     const initialCount = await eventList.locator('> div').count();

@@ -1,5 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 
+import { resetDatabase } from './test-helpers';
+
 // 헬퍼 함수: 반복 일정 생성
 async function createRecurringEvent(
   page: Page,
@@ -36,7 +38,7 @@ async function createRecurringEvent(
   await page.fill('#description', description);
   await page.fill('#location', location);
   await page.click('#category');
-  await page.click(`[aria-label="${category}-option"]`);
+  await page.getByRole('option', { name: category }).click();
 
   // 반복 일정 체크
   await page.check('input[type="checkbox"]');
@@ -62,6 +64,9 @@ async function createRecurringEvent(
   if (await continueButton.isVisible({ timeout: 1000 }).catch(() => false)) {
     await continueButton.click();
   }
+
+  // 성공 알림 대기 (일정이 실제로 저장되었는지 확인)
+  await expect(page.getByText('일정이 추가되었습니다').last()).toBeVisible({ timeout: 5000 });
 }
 
 // 헬퍼 함수: N일 후 날짜 문자열 반환
@@ -73,6 +78,7 @@ function getDateAfterDays(days: number, baseDate = new Date()): string {
 
 test.describe('반복 일정 관리 워크플로우', () => {
   test.beforeEach(async ({ page }) => {
+    await resetDatabase(page);
     await page.goto('/');
     await page.waitForLoadState('networkidle');
   });
@@ -96,14 +102,16 @@ test.describe('반복 일정 관리 워크플로우', () => {
     const eventList = page.getByTestId('event-list');
 
     // 일정이 여러 개 생성되었는지 확인 (반복 일정이므로)
-    const eventCards = eventList.getByText('매일 운동');
+    // 일정이 리스트에 나타날 때까지 대기
+    await expect(eventList.getByText('매일 운동', { exact: true }).first()).toBeVisible({
+      timeout: 5000,
+    });
+
+    const eventCards = eventList.getByText('매일 운동', { exact: true });
     const count = await eventCards.count();
 
     // 최소 1개 이상의 일정이 생성되어야 함
     expect(count).toBeGreaterThan(0);
-
-    // 첫 번째 일정이 보이는지 확인
-    await expect(eventCards.first()).toBeVisible();
   });
 
   test('반복 일정 생성 - 매주 반복', async ({ page }) => {
@@ -122,11 +130,13 @@ test.describe('반복 일정 관리 워크플로우', () => {
 
     // 반복 일정 확인
     const eventList = page.getByTestId('event-list');
-    const eventCards = eventList.getByText('주간 회의');
-    const count = await eventCards.count();
+    await expect(eventList.getByText('주간 회의', { exact: true }).first()).toBeVisible({
+      timeout: 5000,
+    });
 
+    const eventCards = eventList.getByText('주간 회의', { exact: true });
+    const count = await eventCards.count();
     expect(count).toBeGreaterThan(0);
-    await expect(eventCards.first()).toBeVisible();
   });
 
   test('반복 일정 생성 - 매월 반복', async ({ page }) => {
@@ -144,11 +154,14 @@ test.describe('반복 일정 관리 워크플로우', () => {
 
     // 반복 일정 확인
     const eventList = page.getByTestId('event-list');
-    const eventCards = eventList.getByText('월간 보고');
-    const count = await eventCards.count();
+    // 일정이 리스트에 나타날 때까지 대기
+    await expect(eventList.getByText('월간 보고', { exact: true }).first()).toBeVisible({
+      timeout: 5000,
+    });
 
+    const eventCards = eventList.getByText('월간 보고', { exact: true });
+    const count = await eventCards.count();
     expect(count).toBeGreaterThan(0);
-    await expect(eventCards.first()).toBeVisible();
   });
 
   test('반복 일정 생성 - 매년 반복', async ({ page }) => {
@@ -166,11 +179,13 @@ test.describe('반복 일정 관리 워크플로우', () => {
 
     // 반복 일정 확인
     const eventList = page.getByTestId('event-list');
-    const eventCards = eventList.getByText('생일');
-    const count = await eventCards.count();
+    await expect(eventList.getByText('생일', { exact: true }).first()).toBeVisible({
+      timeout: 5000,
+    });
 
+    const eventCards = eventList.getByText('생일', { exact: true });
+    const count = await eventCards.count();
     expect(count).toBeGreaterThan(0);
-    await expect(eventCards.first()).toBeVisible();
   });
 
   test('반복 일정 수정 - 단일 일정만 수정', async ({ page }) => {
@@ -313,7 +328,12 @@ test.describe('반복 일정 관리 워크플로우', () => {
     // "아니오"(전체 삭제) 선택
     await page.click('button:has-text("아니오")');
 
+    // 삭제 성공 알림 대기
+    await expect(page.getByText('일정이 삭제되었습니다')).toBeVisible({ timeout: 5000 });
+
     // 일정이 삭제되었는지 확인
-    await expect(eventList.getByText('전체 삭제 테스트', { exact: true })).not.toBeVisible();
+    const eventCards = eventList.getByText('전체 삭제 테스트', { exact: true });
+    const count = await eventCards.count();
+    expect(count).toBe(0);
   });
 });

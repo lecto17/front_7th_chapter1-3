@@ -79,7 +79,10 @@ test.describe('검색 및 필터링 워크플로우', () => {
     await page.fill('#end-time', '11:00');
     await page.fill('#description', '일반적인 내용');
     await page.fill('#location', '회의실 A');
+    await page.click('#category');
+    await page.getByRole('option', { name: '업무' }).click();
     await page.click('[data-testid="event-submit-button"]');
+    await expect(page.getByText('일정이 추가되었습니다').last()).toBeVisible({ timeout: 5000 });
 
     // 설명에 키워드가 있는 일정
     await page.fill('#title', '일정 A');
@@ -88,7 +91,10 @@ test.describe('검색 및 필터링 워크플로우', () => {
     await page.fill('#end-time', '14:00');
     await page.fill('#description', '중요한 프로젝트 논의');
     await page.fill('#location', '회의실 B');
+    await page.click('#category');
+    await page.getByRole('option', { name: '업무' }).click();
     await page.click('[data-testid="event-submit-button"]');
+    await expect(page.getByText('일정이 추가되었습니다').last()).toBeVisible({ timeout: 5000 });
 
     // 위치에 키워드가 있는 일정
     await page.fill('#title', '일정 B');
@@ -97,7 +103,10 @@ test.describe('검색 및 필터링 워크플로우', () => {
     await page.fill('#end-time', '16:00');
     await page.fill('#description', '일반 업무');
     await page.fill('#location', '본사 3층');
+    await page.click('#category');
+    await page.getByRole('option', { name: '업무' }).click();
     await page.click('[data-testid="event-submit-button"]');
+    await expect(page.getByText('일정이 추가되었습니다').last()).toBeVisible({ timeout: 5000 });
 
     const eventList = page.getByTestId('event-list');
 

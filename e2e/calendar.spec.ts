@@ -1,50 +1,6 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
-import { resetDatabase } from './test-helpers';
-
-// 헬퍼 함수: 일정 생성
-async function createEvent(
-  page: Page,
-  eventData: {
-    title?: string;
-    date?: string;
-    startTime?: string;
-    endTime?: string;
-    description?: string;
-    location?: string;
-    category?: '업무' | '개인';
-  }
-) {
-  const {
-    title = 'E2E 테스트 일정',
-    date = '2025-11-06',
-    startTime = '10:00',
-    endTime = '11:00',
-    description = '테스트 설명입니다',
-    location = '테스트 장소',
-    category = '업무',
-  } = eventData;
-
-  await page.fill('#title', title);
-  await page.fill('#date', date);
-  await page.fill('#start-time', startTime);
-  await page.fill('#end-time', endTime);
-  await page.fill('#description', description);
-  await page.fill('#location', location);
-  await page.click('#category');
-  await page.click(`[aria-label="${category}-option"]`);
-  await page.click('[data-testid="event-submit-button"]');
-
-  // 일정 겹침 다이얼로그 자동 처리
-  const continueButton = page.getByRole('button', { name: '계속 진행' });
-
-  if (await continueButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await continueButton.click();
-  }
-
-  // 성공 알림 대기 (일정이 실제로 저장되었는지 확인)
-  await expect(page.getByText('일정이 추가되었습니다')).toBeVisible({ timeout: 5000 });
-}
+import { createEvent, resetDatabase } from './test-helpers';
 
 test.describe('일정 관리 CRUD 워크플로우', () => {
   test.beforeEach(async ({ page }) => {

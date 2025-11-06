@@ -191,6 +191,28 @@ app.delete('/api/recurring-events/:repeatId', async (req, res) => {
   res.status(204).send();
 });
 
+// E2E 테스트용 데이터베이스 초기화 엔드포인트
+app.post('/api/reset', async (req, res) => {
+  // E2E 환경에서만 허용
+  if (process.env.TEST_ENV !== 'e2e') {
+    return res.status(403).json({ error: 'Reset only allowed in E2E environment' });
+  }
+
+  try {
+    fs.writeFileSync(
+      `${__dirname}/src/__mocks__/response/${dbName}`,
+      JSON.stringify({ events: [] })
+    );
+
+    console.log('Database reset successfully');
+
+    res.status(200).json({ message: 'Database reset successfully', events: [] });
+  } catch (error) {
+    console.error('Error resetting database:', error);
+    res.status(500).json({ error: 'Failed to reset database' });
+  }
+});
+
 app.listen(port, () => {
   if (!fs.existsSync(`${__dirname}/src/__mocks__/response/${dbName}`)) {
     fs.writeFileSync(

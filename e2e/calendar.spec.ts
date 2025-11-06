@@ -1,5 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 
+import { resetDatabase } from './test-helpers';
+
 // 헬퍼 함수: 일정 생성
 async function createEvent(
   page: Page,
@@ -39,27 +41,30 @@ async function createEvent(
   if (await continueButton.isVisible({ timeout: 1000 }).catch(() => false)) {
     await continueButton.click();
   }
+
+  // 성공 알림 대기 (일정이 실제로 저장되었는지 확인)
+  await expect(page.getByText('일정이 추가되었습니다')).toBeVisible({ timeout: 5000 });
 }
 
 test.describe('일정 관리 CRUD 워크플로우', () => {
   test.beforeEach(async ({ page }) => {
+    await resetDatabase(page);
     await page.goto('/');
     await page.waitForLoadState('networkidle');
   });
 
   test('일정 생성(Create) - 기본 일정 추가', async ({ page }) => {
     // 일정 생성 전 개수 확인
-    const eventList = page.getByTestId('event-list');
-    const initialCount = await eventList.locator('> div').count();
-
     const uniqueTitle = `E2E 테스트 일정 ${Date.now()}`;
 
     // 일정 생성
     await createEvent(page, { title: uniqueTitle });
 
-    // 검증: 일정이 추가되었는지만 확인
-    const finalCount = await eventList.locator('> div').count();
-    expect(finalCount).toBe(initialCount + 1);
+    // 성공 알림 확인
+    await expect(page.getByText('일정이 추가되었습니다')).toBeVisible();
+
+    // 일정이 리스트에 추가될 때까지 대기
+    const eventList = page.getByTestId('event-list');
     await expect(eventList.getByText(uniqueTitle)).toBeVisible();
   });
 
@@ -73,37 +78,48 @@ test.describe('일정 관리 CRUD 워크플로우', () => {
       endTime: '15:00',
     });
 
+    // 성공 알림 확인
+    await expect(page.getByText('일정이 추가되었습니다')).toBeVisible();
+
     // 검증: 일정이 표시되는지 확인
     const eventList = page.getByTestId('event-list');
     await expect(eventList.getByText(uniqueTitle)).toBeVisible();
   });
 
   test('일정 수정(Update) - 기존 일정 편집', async ({ page }) => {
-    const originalTitle = `수정 전 제목 ${Date.now()}`;
-    const updatedTitle = `수정 후 제목 ${Date.now()}`;
+    const originalTitle = `수정 전 제목`;
+    const updatedTitle = `수정 후 제목`;
 
     // 일정 생성
-    await createEvent(page, {
-      title: originalTitle,
-      startTime: '09:00',
-      endTime: '10:00',
-    });
+    await createEvent(page, { title: originalTitle });
 
-    // 일정이 생성될 때까지 대기
+    // 성공 알림 확인
+    await expect(page.getByText('일정이 추가되었습니다')).toBeVisible();
+
+    // 일정이 리스트에 나타날 때까지 대기
     const eventList = page.getByTestId('event-list');
-    await expect(eventList.getByText(originalTitle)).toBeVisible();
+    await expect(eventList.getByText(originalTitle)).toBeVisible({ timeout: 3000 });
 
-    // 수정 버튼 클릭
-    await page.click('[aria-label="Edit event"]');
+    // 수정 버튼 클릭 - 특정 일정의 수정 버튼 클릭
+    const eventCard = eventList.locator('div').filter({ hasText: originalTitle }).first();
+    await eventCard.locator('[aria-label="Edit event"]').click();
 
     // 제목 수정
     await page.fill('#title', updatedTitle);
     await page.click('[data-testid="event-submit-button"]');
 
+    // 겹침 다이얼로그 처리
+    const continueButton = page.getByRole('button', { name: '계속 진행' });
+    if (await continueButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await continueButton.click();
+    }
+
+    // 성공 알림 확인
+    await expect(page.getByText('일정이 수정되었습니다')).toBeVisible({ timeout: 5000 });
+
     // 검증: 수정된 제목이 표시되고 이전 제목은 사라짐
-    const finalEventList = page.getByTestId('event-list');
-    await expect(finalEventList.getByText(updatedTitle)).toBeVisible();
-    await expect(finalEventList.getByText(originalTitle)).not.toBeVisible();
+    await expect(eventList.getByText(updatedTitle)).toBeVisible();
+    await expect(eventList.getByText(originalTitle)).not.toBeVisible({ timeout: 10000 });
   });
 
   test('일정 삭제(Delete) - 일정 제거', async ({ page }) => {
@@ -116,6 +132,9 @@ test.describe('일정 관리 CRUD 워크플로우', () => {
       endTime: '17:00',
     });
 
+    // 성공 알림 확인
+    await expect(page.getByText('일정이 추가되었습니다')).toBeVisible();
+
     // 일정이 생성될 때까지 대기
     const eventList = page.getByTestId('event-list');
     await expect(eventList.getByText(uniqueTitle)).toBeVisible();
@@ -127,8 +146,7 @@ test.describe('일정 관리 CRUD 워크플로우', () => {
     await eventCard.locator('[aria-label="Delete event"]').click();
 
     // 검증: 일정 개수가 감소했는지 확인
-    const finalCount = await eventList.locator('> div').count();
-    expect(finalCount).toBe(initialCount - 1);
+    await expect(page.getByText('일정이 삭제되었습니다')).toBeVisible();
     await expect(eventList.getByText(uniqueTitle)).not.toBeVisible();
   });
 
@@ -147,30 +165,51 @@ test.describe('일정 관리 CRUD 워크플로우', () => {
     await page.click('[aria-label="개인-option"]');
     await page.click('[data-testid="event-submit-button"]');
 
+    // 성공 알림 확인
+    await expect(page.getByText('일정이 추가되었습니다')).toBeVisible();
+
     // 2. Read - 생성된 일정 확인
-    await expect(page.getByText('통합 테스트 일정')).toBeVisible();
-    await expect(page.getByText('통합 테스트')).toBeVisible();
-    await expect(page.getByText('회의실 A')).toBeVisible();
-    await expect(page.getByText('13:00 - 14:00')).toBeVisible();
-    await expect(page.getByText('카테고리: 개인')).toBeVisible();
+    const eventList = page.getByTestId('event-list');
+    await expect(eventList.getByText('통합 테스트 일정')).toBeVisible();
+    await expect(eventList.getByText('통합 테스트', { exact: true })).toBeVisible();
+    await expect(eventList.getByText('회의실 A')).toBeVisible();
+    await expect(eventList.getByText('13:00 - 14:00')).toBeVisible();
+    await expect(eventList.getByText('카테고리: 개인')).toBeVisible();
 
     // 3. Update - 일정 수정
-    await page.click('[aria-label="Edit event"]');
+    const eventCard = eventList.locator('div').filter({ hasText: '통합 테스트 일정' }).first();
+    await eventCard.locator('[aria-label="Edit event"]').click();
     await page.fill('#title', '통합 테스트 일정 (수정됨)');
     await page.fill('#start-time', '15:00');
     await page.fill('#end-time', '16:00');
     await page.click('[data-testid="event-submit-button"]');
 
-    // 수정된 내용 확인
-    await expect(page.getByText('통합 테스트 일정 (수정됨)')).toBeVisible();
-    await expect(page.getByText('15:00 - 16:00')).toBeVisible();
+    // 겹침 다이얼로그 처리
+    const continueButton = page.getByRole('button', { name: '계속 진행' });
+    if (await continueButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await continueButton.click();
+    }
+
+    // 성공 알림 확인
+    await expect(page.getByText('일정이 수정되었습니다')).toBeVisible();
+
+    // 수정된 내용 확인 (event-list 내에서 확인)
+    await expect(eventList.getByText('통합 테스트 일정 (수정됨)')).toBeVisible();
+    await expect(eventList.getByText('15:00 - 16:00')).toBeVisible();
 
     // 4. Delete - 일정 삭제
-    await page.click('[aria-label="Delete event"]');
+    const updatedEventCard = eventList
+      .locator('div')
+      .filter({ hasText: '통합 테스트 일정 (수정됨)' })
+      .first();
+    await updatedEventCard.locator('[aria-label="Delete event"]').click();
+
+    // 성공 알림 확인
+    await expect(page.getByText('일정이 삭제되었습니다')).toBeVisible();
 
     // 삭제 확인
-    await expect(page.getByText('통합 테스트 일정 (수정됨)')).not.toBeVisible();
-    await expect(page.getByText('통합 테스트')).not.toBeVisible();
+    await expect(eventList.getByText('통합 테스트 일정 (수정됨)')).not.toBeVisible();
+    await expect(eventList.getByText('통합 테스트', { exact: true })).not.toBeVisible();
   });
 
   test('검색 기능 - 일정 검색', async ({ page }) => {
@@ -184,50 +223,58 @@ test.describe('일정 관리 CRUD 워크플로우', () => {
     await page.fill('#end-time', '11:00');
     await page.click('[data-testid="event-submit-button"]');
 
+    // 성공 알림 확인
+    await expect(page.getByText('일정이 추가되었습니다')).toBeVisible();
+
     await page.fill('#title', '점심 약속');
     await page.fill('#date', dateString);
     await page.fill('#start-time', '12:00');
     await page.fill('#end-time', '13:00');
     await page.click('[data-testid="event-submit-button"]');
 
+    // 성공 알림 확인
+    await expect(page.getByText('일정이 추가되었습니다')).toBeVisible();
+
     // 두 일정 모두 보이는지 확인
-    await expect(page.getByText('회의 일정')).toBeVisible();
-    await expect(page.getByText('점심 약속')).toBeVisible();
+    const eventList = page.getByTestId('event-list');
+    await expect(eventList.getByText('회의 일정')).toBeVisible();
+    await expect(eventList.getByText('점심 약속')).toBeVisible();
 
     // 검색어 입력
     await page.fill('#search', '회의');
 
     // 검색 결과 확인 - '회의'만 보이고 '점심'은 안 보임
-    await expect(page.getByText('회의 일정')).toBeVisible();
-    await expect(page.getByText('점심 약속')).not.toBeVisible();
+    await expect(eventList.getByText('회의 일정', { exact: true })).toBeVisible();
+    await expect(eventList.getByText('점심 약속')).not.toBeVisible();
 
     // 검색어 지우기
     await page.fill('#search', '');
 
     // 다시 모든 일정이 보이는지 확인
-    await expect(page.getByText('회의 일정')).toBeVisible();
-    await expect(page.getByText('점심 약속')).toBeVisible();
+    await expect(eventList.getByText('회의 일정')).toBeVisible();
+    await expect(eventList.getByText('점심 약속')).toBeVisible();
   });
 
   test('캘린더 뷰 전환 - Week/Month 토글', async ({ page }) => {
-    // 기본적으로 Week 뷰인지 확인
-    await expect(page.getByTestId('week-view')).toBeVisible();
-
-    // Month 뷰로 전환
-    await page.click('[aria-label="뷰 타입 선택"]');
-    await page.click('[aria-label="month-option"]');
-
-    // Month 뷰가 표시되는지 확인
+    // 기본적으로 Month 뷰인지 확인
     await expect(page.getByTestId('month-view')).toBeVisible();
     await expect(page.getByTestId('week-view')).not.toBeVisible();
 
-    // Week 뷰로 다시 전환
+    // Week 뷰로 전환
     await page.click('[aria-label="뷰 타입 선택"]');
     await page.click('[aria-label="week-option"]');
 
-    // Week 뷰가 다시 표시되는지 확인
+    // Week 뷰가 표시되는지 확인
     await expect(page.getByTestId('week-view')).toBeVisible();
     await expect(page.getByTestId('month-view')).not.toBeVisible();
+
+    // Month 뷰로 다시 전환
+    await page.click('[aria-label="뷰 타입 선택"]');
+    await page.click('[aria-label="month-option"]');
+
+    // Month 뷰가 다시 표시되는지 확인
+    await expect(page.getByTestId('month-view')).toBeVisible();
+    await expect(page.getByTestId('week-view')).not.toBeVisible();
   });
 
   test('시간 유효성 검사 - 종료 시간이 시작 시간보다 빠른 경우', async ({ page }) => {

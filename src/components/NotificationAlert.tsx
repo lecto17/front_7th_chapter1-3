@@ -51,3 +51,4 @@ const NotificationAlert = ({ notifications, onDismiss }: NotificationAlertProps)
 };
 
 export default NotificationAlert;
+

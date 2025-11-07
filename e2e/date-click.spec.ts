@@ -2,13 +2,6 @@ import { test, expect } from '@playwright/test';
 
 import { resetDatabase } from './test-helpers';
 
-// 헬퍼 함수: N일 후 날짜 문자열 반환
-function getDateAfterDays(days: number, baseDate = new Date()): string {
-  const date = new Date(baseDate);
-  date.setDate(date.getDate() + days);
-  return date.toISOString().split('T')[0];
-}
-
 test.describe('날짜 클릭 기능', () => {
   test.beforeEach(async ({ page }) => {
     await resetDatabase(page);
@@ -45,4 +38,3 @@ test.describe('날짜 클릭 기능', () => {
     await expect(titleInput).toBeFocused();
   });
 });
-

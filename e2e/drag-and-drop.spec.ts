@@ -1,7 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 
 import { createEvent, resetDatabase } from './test-helpers';
-
 import { formatDate } from '../src/utils/dateUtils';
 
 // 헬퍼 함수: 반복 일정 생성
